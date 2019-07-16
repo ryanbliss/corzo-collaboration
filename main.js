@@ -45,7 +45,6 @@ function startServer() {
     try {
       const accessToken = req.headers('Authorization')
         .split(' ')[1];
-      // TODO: figure out how req.headers works and get it
       const { orgId } = parseJwt(accessToken);
       if (data.note) {
         // this is an existing note
