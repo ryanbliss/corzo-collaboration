@@ -1,4 +1,9 @@
-function checkIfTokenIsValid(accessToken) {
-    // TODO: check the token bro
-    return true;
+import jwt from 'jsonwebtoken';
+
+export default function parseJwt(accessToken) {
+  try {
+    return jwt.verify(accessToken, 'secret');
+  } catch (err) {
+    throw err;
+  }
 }
