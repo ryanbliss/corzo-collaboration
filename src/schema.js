@@ -101,6 +101,32 @@ const schema = {
         tag: 'h1',
       }],
     },
+    inlineField: {
+      attrs: {
+        associationId: {},
+        fieldId: {},
+        label: {},
+        value: {},
+        fieldType: {},
+        initialFocus: {},
+      },
+      group: 'block',
+      selectable: true,
+      showGapCursor: true,
+      atom: true,
+      parseDOM: [
+        {
+          tag: 'div',
+          getAttrs: dom => ({
+            associationId: dom.getAttribute('data-association-id'),
+            fieldId: dom.getAttribute('data-field-id'),
+            label: dom.getAttribute('data-label'),
+            value: dom.getAttribute('data-value'),
+            initialFocus: dom.getAttribute('data-initial-focus'),
+          }),
+        },
+      ],
+    },
   },
   marks: {
     bold: {
