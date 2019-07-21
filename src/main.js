@@ -17,23 +17,10 @@ server.listen(8081);
 console.log('Listening on http://localhost:8081');
 
 // options
-const simulateSlowServerDelay = 500; // milliseconds
-const lockedPath = './src/db_locked.json';
+const simulateSlowServerDelay = 0; // milliseconds
 const maxStoredSteps = 1000;
-const defaultData = {
-  version: 0,
-  doc: {
-    type: 'doc',
-    content: [
-      {
-        type: 'title',
-      },
-      {
-        type: 'paragraph',
-      },
-    ],
-  },
-};
+
+const lockedNotes = [];
 
 const sleep = ms => (new Promise(resolve => setTimeout(resolve, ms)));
 
@@ -73,16 +60,30 @@ function storeSteps({ steps, version }, meta) {
   });
 }
 
-function storeLocked(locked) {
-  fs.writeFileSync(lockedPath, locked.toString());
+function isLocked(noteId) {
+  return lockedNotes.find(value => noteId === value) != null;
+}
+
+function setLocked(noteId) {
+  if (!isLocked(noteId)) {
+    lockedNotes.push(noteId);
+  } else {
+    console.log(`note ${noteId} is already locked`);
+  }
+}
+
+function setUnlocked(noteId) {
+  for (let i = 0; i < lockedNotes.length; i += 1) {
+    if (lockedNotes[i] === noteId) {
+      lockedNotes.splice(i, 1);
+      return;
+    }
+  }
+  console.log(`note ${noteId} is already unlocked`);
 }
 
 async function getDoc(meta) {
   return (await getNoteContent(meta.noteId)).content;
-}
-
-function getLocked() {
-  return JSON.parse(fs.readFileSync(lockedPath, 'utf8'));
 }
 
 function getSteps(version, meta) {
@@ -120,12 +121,12 @@ io
       // we need to check if there is another update processed
       // so we store a "locked" state
       console.log('attempting to update document');
-      const locked = getLocked();
+      const locked = isLocked(meta.noteId);
       if (locked) {
       // we will do nothing and wait for another client update
         return;
       }
-      storeLocked(true);
+      setLocked(meta.noteId);
 
       const storedData = await getDoc(meta);
 
@@ -139,7 +140,7 @@ io
           version,
           steps: sendSteps,
         });
-        storeLocked(false);
+        setUnlocked(meta.noteId);
         return;
       }
 
@@ -176,7 +177,7 @@ io
         steps: getSteps(version, meta),
       });
 
-      storeLocked(false);
+      setUnlocked(meta.noteId);
     });
 
     // send latest document
