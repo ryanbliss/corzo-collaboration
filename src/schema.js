@@ -101,6 +101,30 @@ const schema = {
         tag: 'h1',
       }],
     },
+    todo_item: {
+      attrs: {
+        done: {
+          default: false,
+        },
+      },
+      draggable: true,
+      content: '(paragraph|todo_list)+',
+      parseDOM: [{
+        priority: 51,
+        tag: '[data-type="todo_item"]',
+        getAttrs: dom => ({
+          done: dom.getAttribute('data-done') === 'true',
+        }),
+      }],
+    },
+    todo_list: {
+      group: 'block',
+      content: 'todo_item+',
+      parseDOM: [{
+        priority: 51,
+        tag: '[data-type="todo_list"]',
+      }],
+    },
     inlineField: {
       attrs: {
         associationId: {},
@@ -176,6 +200,22 @@ const schema = {
         },
         {
           style: 'font-style=italic',
+        },
+      ],
+    },
+    link: {
+      attrs: {
+        href: {
+          default: null,
+        },
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: 'a[href]',
+          getAttrs: dom => ({
+            href: dom.getAttribute('href'),
+          }),
         },
       ],
     },

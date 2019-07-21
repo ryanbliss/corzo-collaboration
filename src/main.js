@@ -16,7 +16,7 @@ server.listen(8081);
 console.log('Listening on http://localhost:8081');
 
 // options
-const simulateSlowServerDelay = 0; // milliseconds
+const simulateSlowServerDelay = 500; // milliseconds
 const lockedPath = './src/db_locked.json';
 const maxStoredSteps = 1000;
 const defaultData = {
