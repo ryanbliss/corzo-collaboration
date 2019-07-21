@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 
 const pool = new Pool({ ssl: true });
 
-export function getNoteContent(noteId) {
+function getNoteContent(noteId) {
   return pool
     .connect()
     .then(client => client
@@ -21,7 +21,7 @@ export function getNoteContent(noteId) {
       }));
 }
 
-export function updateNoteContent(noteId, content) {
+function updateNoteContent(noteId, content) {
   pool
     .connect()
     .then((client) => {
@@ -37,4 +37,13 @@ export function updateNoteContent(noteId, content) {
           throw e;
         });
     });
+}
+
+export async function storeDoc(data, meta) {
+  const noteContent = JSON.stringify(data, null, 2);
+  await updateNoteContent(meta.noteId, noteContent);
+}
+
+export async function getDoc(meta) {
+  return (await getNoteContent(meta.noteId)).content;
 }

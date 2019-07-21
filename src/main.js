@@ -1,9 +1,10 @@
 /* eslint-disable no-console,no-trailing-spaces */
-import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { Step } from 'prosemirror-transform';
 import schema from './schema';
-import { getNoteContent, updateNoteContent } from './database';
+import { getDoc, storeDoc } from './docsRepo';
+import { storeSteps, getSteps } from './steps';
+import { setUnlocked, setLocked, isLocked } from './noteLock';
 
 const express = require('express');
 
@@ -18,83 +19,7 @@ console.log('Listening on http://localhost:8081');
 
 // options
 const simulateSlowServerDelay = 0; // milliseconds
-const maxStoredSteps = 1000;
-
-const lockedNotes = [];
-
 const sleep = ms => (new Promise(resolve => setTimeout(resolve, ms)));
-
-function getDocPath(table, meta) {
-  return `./src/data/${table}/${meta.orgId}${meta.noteId}.json`;
-}
-
-async function storeDoc(data, meta) {
-  const noteContent = JSON.stringify(data, null, 2);
-  await updateNoteContent(meta.noteId, noteContent);
-}
-
-function storeSteps({ steps, version }, meta) {
-  const docPath = getDocPath('steps', meta);
-  fs.open(docPath, 'r', (err) => {
-    if (err) {
-      fs.writeFile(docPath, JSON.stringify(steps, null, 2),
-        { overwrite: false }, (writeErr) => {
-          if (writeErr) throw writeErr;
-          console.log('It\'s saved!');
-        });
-    } else {
-      // The file already exists
-      const oldData = JSON.parse(fs.readFileSync(docPath, 'utf8'));
-      const limitedOldData = oldData.slice(Math.max(oldData.length - maxStoredSteps));
-
-      const newData = [
-        ...limitedOldData,
-        ...steps.map((step, index) => ({
-          step: JSON.parse(JSON.stringify(step)),
-          version: version + index + 1,
-          clientID: step.clientID,
-        })),
-      ];
-      fs.writeFileSync(docPath, JSON.stringify(newData));
-    }
-  });
-}
-
-function isLocked(noteId) {
-  return lockedNotes.find(value => noteId === value) != null;
-}
-
-function setLocked(noteId) {
-  if (!isLocked(noteId)) {
-    lockedNotes.push(noteId);
-  } else {
-    console.log(`note ${noteId} is already locked`);
-  }
-}
-
-function setUnlocked(noteId) {
-  for (let i = 0; i < lockedNotes.length; i += 1) {
-    if (lockedNotes[i] === noteId) {
-      lockedNotes.splice(i, 1);
-      return;
-    }
-  }
-  console.log(`note ${noteId} is already unlocked`);
-}
-
-async function getDoc(meta) {
-  return (await getNoteContent(meta.noteId)).content;
-}
-
-function getSteps(version, meta) {
-  const docPath = getDocPath('steps', meta);
-  try {
-    const steps = JSON.parse(fs.readFileSync(docPath, 'utf8'));
-    return steps.filter(step => step.version > version);
-  } catch (e) {
-    return [];
-  }
-}
 
 io
   .use((socket, next) => {
