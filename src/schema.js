@@ -151,6 +151,15 @@ const schema = {
         },
       ],
     },
+    blockquote: {
+      content: 'block*',
+      group: 'block',
+      defining: true,
+      draggable: false,
+      parseDOM: [
+        { tag: 'blockquote' },
+      ],
+    },
   },
   marks: {
     bold: {
