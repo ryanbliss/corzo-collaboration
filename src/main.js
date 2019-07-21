@@ -1,8 +1,9 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console,no-trailing-spaces */
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { Step } from 'prosemirror-transform';
 import schema from './schema';
+import { getNoteContent, updateNoteContent } from './database';
 
 const express = require('express');
 
@@ -40,20 +41,9 @@ function getDocPath(table, meta) {
   return `./src/data/${table}/${meta.orgId}${meta.noteId}.json`;
 }
 
-function storeDoc(data, meta) {
-  const docPath = getDocPath('notes', meta);
-  fs.open(docPath, 'r', (err) => {
-    if (err) {
-      fs.writeFile(docPath, JSON.stringify(data, null, 2),
-        { overwrite: false }, (writeErr) => {
-          if (writeErr) throw writeErr;
-          console.log('It\'s saved!');
-        });
-    } else {
-      // The file already exists
-      fs.writeFileSync(docPath, JSON.stringify(data, null, 2));
-    }
-  });
+async function storeDoc(data, meta) {
+  const noteContent = JSON.stringify(data, null, 2);
+  await updateNoteContent(meta.noteId, noteContent);
 }
 
 function storeSteps({ steps, version }, meta) {
@@ -87,13 +77,8 @@ function storeLocked(locked) {
   fs.writeFileSync(lockedPath, locked.toString());
 }
 
-function getDoc(meta) {
-  const docPath = getDocPath('notes', meta);
-  try {
-    return JSON.parse(fs.readFileSync(docPath, 'utf8'));
-  } catch (e) {
-    return defaultData;
-  }
+async function getDoc(meta) {
+  return (await getNoteContent(meta.noteId)).content;
 }
 
 function getLocked() {
@@ -110,22 +95,23 @@ function getSteps(version, meta) {
   }
 }
 
-io.use((socket, next) => {
-  console.log('connection attempt');
-  if (socket.handshake.query && socket.handshake.query.token) {
-    jwt.verify(socket.handshake.query.token, 'secret', (err, decoded) => {
-      if (err) return next(new Error('Authentication error'));
-      // eslint-disable-next-line no-param-reassign
-      socket.decoded = decoded;
-      console.log('authenticated user');
-      return next();
-    });
-  } else {
-    next(new Error('Authentication error'));
-  }
-})
+io
+  .use((socket, next) => {
+    console.log('connection attempt');
+    if (socket.handshake.query && socket.handshake.query.token) {
+      jwt.verify(socket.handshake.query.token, 'secret', (err, decoded) => {
+        if (err) return next(new Error('Authentication error'));
+        // eslint-disable-next-line no-param-reassign
+        socket.decoded = decoded;
+        console.log('authenticated user');
+        return next();
+      });
+    } else {
+      next(new Error('Authentication error'));
+    }
+  })
   .on('connection', (socket) => {
-    const parsedToken = jwt.verify(socket.handshake.query.token, 'secret');
+    const parsedToken = jwt.decode(socket.handshake.query.token);
     const meta = {
       orgId: parsedToken.orgId,
       noteId: socket.handshake.query.noteId,
@@ -141,7 +127,7 @@ io.use((socket, next) => {
       }
       storeLocked(true);
 
-      const storedData = getDoc(meta);
+      const storedData = await getDoc(meta);
 
       await sleep(simulateSlowServerDelay);
 
@@ -180,7 +166,7 @@ io.use((socket, next) => {
 
       // store data
       storeSteps({ version, steps: newSteps }, meta);
-      storeDoc({ version: newVersion, doc }, meta);
+      await storeDoc({ version: newVersion, doc }, meta);
 
       await sleep(simulateSlowServerDelay);
 
@@ -194,7 +180,9 @@ io.use((socket, next) => {
     });
 
     // send latest document
-    socket.emit('init', getDoc(meta));
+    getDoc(meta).then((doc) => {
+      socket.emit('init', doc);
+    });
 
     // send client count
     io.sockets.emit('getCount', io.engine.clientsCount);
