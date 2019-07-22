@@ -244,14 +244,17 @@ io.use((socket, next) => {
     socket.emit('init');
 
     // send client count
-    io.to(meta.noteId).emit('getCount', io.sockets.clients(meta.noteId).length);
+    let clients = io.clients(meta.noteId);
+    if (clients) {
+      io.to(meta.noteId).emit('getCount', clients.length);
+    }
     socket.on('disconnect', () => {
-      const clientCount = io.sockets.clients(meta.noteId).length;
-      if (clientCount > 0) {
-        // TODO: if the note has no title or text, remove the note
+      clients = io.clients(meta.noteId);
+      if (clients) {
+        io.to(meta.noteId).emit('getCount', clients.length);
       } else {
-        socket.leave(meta.noteId);
+        // TODO: if the note has no title or text, remove the note
+        console.log('all clients have left the room');
       }
-      io.to(meta.noteId).emit('getCount', clientCount);
     });
   });
