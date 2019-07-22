@@ -11,10 +11,16 @@ export function storeSteps({ steps, version }, meta) {
   const docPath = getStepsPath(meta);
   fs.open(docPath, 'r', (err) => {
     if (err) {
-      fs.writeFile(docPath, JSON.stringify(steps, null, 2),
+      const newData = [
+        ...steps.map((step, index) => ({
+          step: JSON.parse(JSON.stringify(step)),
+          version: version + index + 1,
+          clientID: step.clientID,
+        })),
+      ];
+      fs.writeFile(docPath, JSON.stringify(newData),
         { overwrite: false }, (writeErr) => {
           if (writeErr) throw writeErr;
-          console.log('It\'s saved!');
         });
     } else {
       // The file already exists
@@ -40,6 +46,7 @@ export function getSteps(version, meta) {
     const steps = JSON.parse(fs.readFileSync(docPath, 'utf8'));
     return steps.filter(step => step.version > version);
   } catch (e) {
+    console.log(e);
     return [];
   }
 }

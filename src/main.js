@@ -40,12 +40,16 @@ io
     const parsedToken = jwt.decode(socket.handshake.query.token);
     const meta = {
       orgId: parsedToken.orgId,
-      noteId: socket.handshake.query.noteId,
     };
-    socket.on('update', async ({ version, clientID, steps }) => {
+    socket.on('update', async ({
+      version, clientID, steps, editedAssociations,
+    }) => {
+      if (!editedAssociations) {
+        // TODO: client needs to actually send these lol
+      }
       // we need to check if there is another update processed
       // so we store a "locked" state
-      console.log('attempting to update document');
+      console.log('attempting to update document', meta.noteId);
       const locked = isLocked(meta.noteId);
       if (locked) {
       // we will do nothing and wait for another client update
@@ -97,22 +101,63 @@ io
       await sleep(simulateSlowServerDelay);
 
       // send update to everyone (me and others)
-      io.sockets.emit('update', {
-        version: newVersion,
-        steps: getSteps(version, meta),
-      });
+      const sendSteps = getSteps(version, meta);
+      if (meta.noteId) {
+        io.to(meta.noteId).emit('update', {
+          version: newVersion,
+          steps: sendSteps,
+        });
+      } else {
+        console.log('no note id');
+      }
 
       setUnlocked(meta.noteId);
     });
 
-    // send latest document
-    getDoc(meta).then((doc) => {
-      socket.emit('init', doc);
+    socket.on('getNote', async (noteId) => {
+      if (!noteId) {
+        throw new Error('Socket Eror:: getNote: no noteId');
+      }
+      if (meta.noteId) {
+        // the user is already in a room
+        socket.leave(meta.noteId);
+      }
+      meta.noteId = noteId;
+      socket.join(noteId);
+      // send latest document
+      socket.emit('getNote', await getDoc(meta));
+    });
+    socket.on('createNote', async (associations) => {
+      if (!associations) {
+        throw new Error('Socket Eror:: createNote: no associations');
+      }
+      if (meta.noteId) {
+        // the user is already in a room
+        socket.leave(meta.noteId);
+      }
+      // TODO: create a new note and assign the noteId to meta
+      const noteId = 'blahblah';
+      meta.noteId = noteId;
+      socket.join(noteId);
+      // send latest document
+      socket.emit('createNote', {
+        noteId,
+        data: await getDoc(meta),
+      });
     });
 
+    socket.emit('init');
+
+
     // send client count
-    io.sockets.emit('getCount', io.engine.clientsCount);
+    io.to(meta.noteId).emit('getCount', io.of('/').in(meta.noteId).clients.length);
     socket.on('disconnect', () => {
-      io.sockets.emit('getCount', io.engine.clientsCount);
+      const clientCount = io.of('/').in(meta.noteId).clients.length;
+      if (clientCount > 0) {
+        // TODO: if the note has no title or text, remove the note
+      } else {
+        socket.leave(meta.noteId);
+      }
+      io.to(meta.noteId).emit('getCount', clientCount);
     });
   });
