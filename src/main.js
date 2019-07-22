@@ -244,14 +244,12 @@ io.use((socket, next) => {
     socket.emit('init');
 
     // send client count
-    let clients = io.clients(meta.noteId);
-    if (clients) {
-      io.to(meta.noteId).emit('getCount', clients.length);
-    }
+    let clientCount = io.of('/').in(meta.noteId).clients.length;
+    io.to(meta.noteId).emit('getCount', clientCount);
     socket.on('disconnect', () => {
-      clients = io.clients(meta.noteId);
-      if (clients) {
-        io.to(meta.noteId).emit('getCount', clients.length);
+      clientCount = io.of('/').in(meta.noteId).clients.length;
+      if (clientCount > 0) {
+        io.to(meta.noteId).emit('getCount', clientCount);
       } else {
         // TODO: if the note has no title or text, remove the note
         console.log('all clients have left the room');
