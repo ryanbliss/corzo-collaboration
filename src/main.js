@@ -156,14 +156,14 @@ io
         data: await getDoc(meta),
       });
     });
-    socket.on('updateCursorPosition', async (newCursorPosition) => {
-      if (!newCursorPosition) {
+    socket.on('updateCursorPosition', async (data) => {
+      if (!data) {
         throw new Error('Socket Error:: updatePosition: no position');
       }
       // Sending new position all other clients in the room
       socket.to(meta.noteId).emit('updateCursorPosition', {
         userId: meta.userId,
-        newPosition: newCursorPosition.newPosition,
+        position: data.position,
       });
     });
 
