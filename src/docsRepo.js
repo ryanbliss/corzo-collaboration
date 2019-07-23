@@ -3,6 +3,8 @@ const { Pool } = require('pg');
 
 const pool = new Pool({ ssl: true });
 
+const noteDoesNotExist = Error('Note does not exist');
+
 function getNoteContent(noteId) {
   return pool
     .connect()
@@ -10,12 +12,15 @@ function getNoteContent(noteId) {
       .query('SELECT content FROM notes WHERE id = $1', [noteId])
       .then((res) => {
         client.release();
-        const content = res.rows[0];
-        console.log(content);
-        return content;
+        if (res.rows.length === 1) {
+          return res.rows[0];
+        }
+        throw noteDoesNotExist;
       })
       .catch((e) => {
-        client.release();
+        if (e !== noteDoesNotExist) {
+          client.release();
+        }
         console.log(e.stack);
         throw e;
       }));

@@ -5,6 +5,7 @@ import schema from './schema';
 import { getDoc, storeDoc } from './docsRepo';
 import { storeSteps, getSteps } from './steps';
 import { setUnlocked, setLocked, isLocked } from './noteLock';
+import createNewNote from './graphql';
 
 const express = require('express');
 
@@ -40,6 +41,8 @@ io
     const parsedToken = jwt.decode(socket.handshake.query.token);
     const meta = {
       orgId: parsedToken.orgId,
+      userId: parsedToken.userId,
+      token: socket.handshake.query.token,
     };
     socket.on('update', async ({
       version, clientID, steps, editedAssociations,
@@ -116,7 +119,7 @@ io
 
     socket.on('getNote', async (noteId) => {
       if (!noteId) {
-        throw new Error('Socket Eror:: getNote: no noteId');
+        throw new Error('Socket Error:: getNote: no noteId');
       }
       if (meta.noteId) {
         // the user is already in a room
@@ -129,14 +132,20 @@ io
     });
     socket.on('createNote', async (associations) => {
       if (!associations) {
-        throw new Error('Socket Eror:: createNote: no associations');
+        throw new Error('Socket Error:: createNote: no associations');
       }
       if (meta.noteId) {
         // the user is already in a room
         socket.leave(meta.noteId);
       }
-      // TODO: create a new note and assign the noteId to meta
-      const noteId = 'blahblah';
+      const note = await createNewNote(
+        [{
+          id: meta.userId,
+          type: 'User',
+        }],
+        meta.token,
+      );
+      const noteId = note.id;
       meta.noteId = noteId;
       socket.join(noteId);
       // send latest document
