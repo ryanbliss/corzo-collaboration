@@ -136,6 +136,7 @@ io.use((socket, next) => {
     const parsedToken = jwt.verify(socket.handshake.query.token, 'secret');
     const meta = {
       orgId: parsedToken.orgId,
+      userId: parsedToken.userId,
     };
     socket.on('update', async ({
       version, clientID, steps, editedAssociations,
@@ -238,6 +239,16 @@ io.use((socket, next) => {
       socket.emit('createNote', {
         noteId,
         data: getDoc(meta),
+      });
+    });
+    socket.on('updateCursorPosition', async (newCursorPosition) => {
+      if (!newCursorPosition) {
+        throw new Error('Socket Error:: updatePosition: no position');
+      }
+      // Sending new position all other clients in the room
+      socket.to(meta.noteId).emit('updateCursorPosition', {
+        userId: meta.userId,
+        newPosition: newCursorPosition.newPosition,
       });
     });
 
