@@ -50,5 +50,6 @@ export async function storeDoc(data, meta) {
 }
 
 export async function getDoc(meta) {
+  console.log('retrieving doc with id:', meta.noteId);
   return (await getNoteContent(meta.noteId)).content;
 }

@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { GraphQLClient } from 'graphql-request';
 
-export default function createNewNote(associations, token) {
+export default async function createNewNote(associations, token) {
   const client = new GraphQLClient('http://corzo-service:8080/graphql', {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -25,6 +25,6 @@ export default function createNewNote(associations, token) {
   };
   return client.request(query, variables).then((note) => {
     console.log(note);
-    return note;
+    return note.newNote;
   });
 }

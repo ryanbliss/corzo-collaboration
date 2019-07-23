@@ -138,11 +138,13 @@ io
         // the user is already in a room
         socket.leave(meta.noteId);
       }
+
+      const userAssociation = [{
+        id: meta.userId,
+        type: 'User',
+      }];
       const note = await createNewNote(
-        [{
-          id: meta.userId,
-          type: 'User',
-        }],
+        associations.concat(userAssociation),
         meta.token,
       );
       const noteId = note.id;
