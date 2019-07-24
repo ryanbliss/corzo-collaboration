@@ -16,7 +16,7 @@ server.listen(8081);
 console.log('Listening on http://localhost:8081');
 
 // options
-const simulateSlowServerDelay = 500; // milliseconds
+const simulateSlowServerDelay = 0; // milliseconds
 const lockedPath = './src/db_locked.json';
 const maxStoredSteps = 1000;
 const defaultData = {
@@ -170,42 +170,45 @@ io.use((socket, next) => {
         return;
       }
 
-      let doc = schema.nodeFromJSON(storedData.doc);
+      try {
+        let doc = schema.nodeFromJSON(storedData.doc);
+        await sleep(simulateSlowServerDelay);
 
-      await sleep(simulateSlowServerDelay);
+        const newSteps = steps.map((step) => {
+          const newStep = Step.fromJSON(schema, step);
+          newStep.clientID = clientID;
 
-      const newSteps = steps.map((step) => {
-        const newStep = Step.fromJSON(schema, step);
-        newStep.clientID = clientID;
+          // apply step to document
+          const result = newStep.apply(doc);
+          // eslint-disable-next-line prefer-destructuring
+          doc = result.doc;
 
-        // apply step to document
-        const result = newStep.apply(doc);
-        // eslint-disable-next-line prefer-destructuring
-        doc = result.doc;
-
-        return newStep;
-      });
-
-      await sleep(simulateSlowServerDelay);
-
-      // calculating a new version number is easy
-      const newVersion = version + newSteps.length;
-
-      // store data
-      storeSteps({ version, steps: newSteps }, meta);
-      storeDoc({ version: newVersion, doc }, meta);
-
-      await sleep(simulateSlowServerDelay);
-
-      // send update to everyone (me and others)
-      const sendSteps = getSteps(version, meta);
-      if (meta.noteId) {
-        io.to(meta.noteId).emit('update', {
-          version: newVersion,
-          steps: sendSteps,
+          return newStep;
         });
-      } else {
-        console.log('no note id');
+
+        await sleep(simulateSlowServerDelay);
+
+        // calculating a new version number is easy
+        const newVersion = version + newSteps.length;
+
+        // store data
+        storeSteps({ version, steps: newSteps }, meta);
+        storeDoc({ version: newVersion, doc }, meta);
+
+        await sleep(simulateSlowServerDelay);
+
+        // send update to everyone (me and others)
+        const sendSteps = getSteps(version, meta);
+        if (meta.noteId) {
+          io.to(meta.noteId).emit('update', {
+            version: newVersion,
+            steps: sendSteps,
+          });
+        } else {
+          console.log('no note id');
+        }
+      } catch (error) {
+        console.log(error);
       }
 
       storeLocked(false);
@@ -241,14 +244,14 @@ io.use((socket, next) => {
         data: getDoc(meta),
       });
     });
-    socket.on('updateCursorPosition', async (newCursorPosition) => {
-      if (!newCursorPosition) {
+    socket.on('updateCursorPosition', async (data) => {
+      if (!data) {
         throw new Error('Socket Error:: updatePosition: no position');
       }
       // Sending new position all other clients in the room
       socket.to(meta.noteId).emit('updateCursorPosition', {
         userId: meta.userId,
-        newPosition: newCursorPosition.newPosition,
+        position: data.position,
       });
     });
 
