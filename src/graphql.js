@@ -1,8 +1,10 @@
 /* eslint-disable no-console */
 import { GraphQLClient } from 'graphql-request';
 
+const { createDeleteUrl } = process.env;
+
 export async function createNewNote(associations, token) {
-  const client = new GraphQLClient('http://corzo-service:8080/graphql', {
+  const client = new GraphQLClient(createDeleteUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -31,7 +33,7 @@ export async function createNewNote(associations, token) {
 
 export async function deleteNote(noteId, token) {
   console.log('deleting note', noteId);
-  const client = new GraphQLClient('http://corzo-service:8080/graphql', {
+  const client = new GraphQLClient(createDeleteUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
