@@ -1,11 +1,12 @@
 /* eslint-disable no-console,no-trailing-spaces */
 import jwt from 'jsonwebtoken';
 import { Step } from 'prosemirror-transform';
+import Socket from 'socket.io/lib/socket';
 import schema from './schema';
-import { getDoc, storeDoc } from './docsRepo';
+import { isDocEmpty, getDoc, storeDoc } from './docsRepo';
 import { storeSteps, getSteps } from './steps';
 import { setUnlocked, setLocked, isLocked } from './noteLock';
-import createNewNote from './graphql';
+import { createNewNote, deleteNote } from './graphql';
 
 const express = require('express');
 
@@ -19,8 +20,14 @@ server.listen(8081);
 console.log('Listening on http://localhost:8081');
 
 // options
-const simulateSlowServerDelay = 0; // milliseconds
+const simulateSlowServerDelay = 250; // milliseconds
 const sleep = ms => (new Promise(resolve => setTimeout(resolve, ms)));
+
+function getClientCount(noteId) {
+  const { length } = io.of('/').in(noteId).clients;
+  console.log('getting room count', length, noteId);
+  return length;
+}
 
 io
   .use((socket, next) => {
@@ -52,69 +59,81 @@ io
       }
       // we need to check if there is another update processed
       // so we store a "locked" state
-      console.log('attempting to update document', meta.noteId);
-      const locked = isLocked(meta.noteId);
+      const { noteId } = meta;
+      console.log('attempting to update document', noteId);
+      const locked = isLocked(noteId);
       if (locked) {
       // we will do nothing and wait for another client update
         return;
       }
-      setLocked(meta.noteId);
+      try {
+        setLocked(noteId);
 
-      const storedData = await getDoc(meta);
+        const storedData = await getDoc(meta);
 
-      await sleep(simulateSlowServerDelay);
+        await sleep(simulateSlowServerDelay);
 
-      // version mismatch: the stored version is newer
-      // so we send all steps of this version back to the user
-      if (storedData.version !== version) {
-        const sendSteps = getSteps(version, meta);
-        socket.emit('update', {
+        // version mismatch: the stored version is newer
+        // so we send all steps of this version back to the user
+        if (storedData.version !== version) {
+          const sendSteps = getSteps(version, meta);
+          socket.emit('update', {
+            version,
+            steps: sendSteps,
+          });
+          setUnlocked(noteId);
+          return;
+        }
+
+        let doc = schema.nodeFromJSON(storedData.doc);
+
+        await sleep(simulateSlowServerDelay);
+
+        const newSteps = steps.map((step) => {
+          const newStep = Step.fromJSON(schema, step);
+          newStep.clientID = clientID;
+
+          // apply step to document
+          const result = newStep.apply(doc);
+          // eslint-disable-next-line prefer-destructuring
+          doc = result.doc;
+
+          return newStep;
+        });
+
+        await sleep(simulateSlowServerDelay);
+
+        // calculating a new version number is easy
+        const newVersion = version + newSteps.length;
+
+        // store data
+        storeSteps({
           version,
-          steps: sendSteps,
-        });
-        setUnlocked(meta.noteId);
-        return;
-      }
-
-      let doc = schema.nodeFromJSON(storedData.doc);
-
-      await sleep(simulateSlowServerDelay);
-
-      const newSteps = steps.map((step) => {
-        const newStep = Step.fromJSON(schema, step);
-        newStep.clientID = clientID;
-
-        // apply step to document
-        const result = newStep.apply(doc);
-        // eslint-disable-next-line prefer-destructuring
-        doc = result.doc;
-
-        return newStep;
-      });
-
-      await sleep(simulateSlowServerDelay);
-
-      // calculating a new version number is easy
-      const newVersion = version + newSteps.length;
-
-      // store data
-      storeSteps({ version, steps: newSteps }, meta);
-      await storeDoc({ version: newVersion, doc }, meta);
-
-      await sleep(simulateSlowServerDelay);
-
-      // send update to everyone (me and others)
-      const sendSteps = getSteps(version, meta);
-      if (meta.noteId) {
-        io.to(meta.noteId).emit('update', {
+          steps: newSteps,
+        }, meta);
+        await storeDoc({
           version: newVersion,
-          steps: sendSteps,
-        });
-      } else {
-        console.log('no note id');
-      }
+          doc,
+        }, meta);
 
-      setUnlocked(meta.noteId);
+        await sleep(simulateSlowServerDelay);
+
+        // send update to everyone (me and others)
+        const sendSteps = getSteps(version, meta);
+        if (noteId) {
+          io.to(noteId)
+            .emit('update', {
+              version: newVersion,
+              steps: sendSteps,
+            });
+        } else {
+          console.log('no note id');
+        }
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setUnlocked(noteId);
+      }
     });
 
     socket.on('getNote', async (noteId) => {
@@ -123,7 +142,7 @@ io
       }
       if (meta.noteId) {
         // the user is already in a room
-        socket.leave(meta.noteId);
+        await socket.leaveMaybeDelete(meta);
       }
       meta.noteId = noteId;
       socket.join(noteId);
@@ -136,7 +155,7 @@ io
       }
       if (meta.noteId) {
         // the user is already in a room
-        socket.leave(meta.noteId);
+        await socket.leaveMaybeDelete(meta);
       }
 
       const userAssociation = [{
@@ -172,13 +191,21 @@ io
 
     // send client count
     io.to(meta.noteId).emit('getCount', io.of('/').in(meta.noteId).clients.length);
-    socket.on('disconnect', () => {
-      const clientCount = io.of('/').in(meta.noteId).clients.length;
-      if (clientCount > 0) {
-        // TODO: if the note has no title or text, remove the note
-      } else {
-        socket.leave(meta.noteId);
-      }
-      io.to(meta.noteId).emit('getCount', clientCount);
+    socket.on('disconnect', async () => {
+      await socket.leaveMaybeDelete(meta);
+      io.to(meta.noteId).emit('getCount', getClientCount(meta.noteId));
     });
   });
+
+Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
+  value: async function leaveMaybeDelete(meta) {
+    const { noteId } = meta;
+    this.leave(noteId);
+    // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
+    if (getClientCount(noteId) <= 1 && await isDocEmpty(noteId) === true) {
+      await deleteNote(noteId, meta.token);
+    }
+  },
+  writable: true,
+  configurable: true,
+});

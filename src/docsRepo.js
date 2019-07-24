@@ -53,3 +53,21 @@ export async function getDoc(meta) {
   console.log('retrieving doc with id:', meta.noteId);
   return (await getNoteContent(meta.noteId)).content;
 }
+
+export async function isDocEmpty(noteId) {
+  console.log(`checking to see if note is empty: ${noteId}`);
+  const noteContent = (await getNoteContent(noteId)).content;
+  console.log(noteContent);
+
+  // check to see if more than title and paragraph node
+  if (noteContent.doc.content.length !== 2) return false;
+
+  // check to see if any title content exists
+  if (noteContent.doc.content[0].content !== undefined) return false;
+
+  // check to see if any note content exists
+  if (noteContent.doc.content[1].content !== undefined) return false;
+
+  console.log(`${noteId} is empty`);
+  return true;
+}
