@@ -171,7 +171,7 @@ io
       socket.join(noteId);
       // send latest document
       socket.emit('createNote', {
-        noteId,
+        note,
         data: await getDoc(meta),
       });
     });
