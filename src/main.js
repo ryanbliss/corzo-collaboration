@@ -145,7 +145,7 @@ io
         await socket.leaveMaybeDelete(meta);
       }
       meta.noteId = noteId;
-      socket.join(noteId);
+      socket.joinThenRegister(meta);
       // send latest document
       socket.emit('getNote', await getDoc(meta));
     });
@@ -168,7 +168,7 @@ io
       );
       const noteId = note.id;
       meta.noteId = noteId;
-      socket.join(noteId);
+      socket.joinThenRegister(meta);
       // send latest document
       socket.emit('createNote', {
         note,
@@ -187,19 +187,25 @@ io
     });
 
     socket.emit('init');
-
-
-    // send client count
-    io.to(meta.noteId).emit('getCount', io.of('/').in(meta.noteId).clients.length);
+    
     socket.on('disconnect', async () => {
       await socket.leaveMaybeDelete(meta);
-      io.to(meta.noteId).emit('getCount', getClientCount(meta.noteId));
     });
   });
 
+Object.defineProperty(Socket.prototype, 'joinThenRegister', {
+  value: async function joinThenRegister(meta) {
+    const { noteId } = meta;
+    this.join(noteId);
+    this.to(noteId).emit('registerUser', meta.userId);
+  },
+  writable: true,
+  configurable: true,
+});
 Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
   value: async function leaveMaybeDelete(meta) {
     const { noteId } = meta;
+    this.to(noteId).emit('deregisterUser', meta.userId);
     this.leave(noteId);
     // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
     if (getClientCount(noteId) <= 1 && await isDocEmpty(noteId) === true) {
