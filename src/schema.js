@@ -125,7 +125,7 @@ const schema = {
         tag: '[data-type="todo_list"]',
       }],
     },
-    inlineField: {
+    inline_field: {
       attrs: {
         associationId: {},
         fieldId: {},
@@ -140,7 +140,7 @@ const schema = {
       atom: false,
       parseDOM: [
         {
-          tag: 'inline_field',
+          tag: 'InlineField',
           getAttrs: dom => ({
             associationId: dom.getAttribute('data-association-id'),
             fieldId: dom.getAttribute('data-field-id'),
