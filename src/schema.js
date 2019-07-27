@@ -140,7 +140,7 @@ const schema = {
       atom: false,
       parseDOM: [
         {
-          tag: 'div',
+          tag: 'inline_field',
           getAttrs: dom => ({
             associationId: dom.getAttribute('data-association-id'),
             fieldId: dom.getAttribute('data-field-id'),
