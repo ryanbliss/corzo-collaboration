@@ -137,7 +137,7 @@ const schema = {
       group: 'block',
       selectable: true,
       showGapCursor: true,
-      atom: true,
+      atom: false,
       parseDOM: [
         {
           tag: 'div',
@@ -146,6 +146,7 @@ const schema = {
             fieldId: dom.getAttribute('data-field-id'),
             label: dom.getAttribute('data-label'),
             value: dom.getAttribute('data-value'),
+            fieldType: dom.getAttribute('data-field-type'),
             initialFocus: dom.getAttribute('data-initial-focus'),
           }),
         },
