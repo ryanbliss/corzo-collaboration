@@ -129,9 +129,7 @@ const schema = {
       attrs: {
         associationId: {},
         fieldId: {},
-        label: {},
         value: {},
-        fieldType: {},
         initialFocus: {},
       },
       group: 'block',
@@ -144,9 +142,7 @@ const schema = {
           getAttrs: dom => ({
             associationId: dom.getAttribute('data-association-id'),
             fieldId: dom.getAttribute('data-field-id'),
-            label: dom.getAttribute('data-label'),
             value: dom.getAttribute('data-value'),
-            fieldType: dom.getAttribute('data-field-type'),
             initialFocus: dom.getAttribute('data-initial-focus'),
           }),
         },
