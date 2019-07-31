@@ -3,9 +3,9 @@ import jwt from 'jsonwebtoken';
 import { Step } from 'prosemirror-transform';
 import Socket from 'socket.io/lib/socket';
 import schema from './schema';
-import { isDocEmpty, getDoc, storeDoc } from './docsRepo';
-import { storeSteps, getSteps } from './steps';
-import { setUnlocked, setLocked, isLocked } from './noteLock';
+import { getDoc, isDocEmpty, storeDoc } from './docsRepo';
+import { getSteps, storeSteps } from './steps';
+import { isLocked, setLocked, setUnlocked } from './noteLock';
 import { createNewNote, deleteNote } from './graphql';
 
 const express = require('express');
@@ -129,8 +129,6 @@ io
         } else {
           console.log('no note id');
         }
-      } catch (e) {
-        console.log(e);
       } finally {
         setUnlocked(noteId);
       }
@@ -166,8 +164,7 @@ io
         associations.concat(userAssociation),
         meta.token,
       );
-      const noteId = note.id;
-      meta.noteId = noteId;
+      meta.noteId = note.id;
       socket.joinThenRegister(meta);
       // send latest document
       socket.emit('createNote', {
@@ -187,7 +184,7 @@ io
     });
 
     socket.emit('init');
-    
+
     socket.on('disconnect', async () => {
       await socket.leaveMaybeDelete(meta);
     });
