@@ -147,7 +147,10 @@ io
       // send latest document
       socket.emit('getNote', await getDoc(meta));
     });
-    socket.on('createNote', async (associations) => {
+    socket.on('createNote', async ({
+      associations,
+      primaryAssociationId,
+    }) => {
       if (!associations) {
         throw new Error('Socket Error:: createNote: no associations');
       }
