@@ -164,6 +164,7 @@ io
         type: 'User',
       }];
       const note = await createNewNote(
+        primaryAssociationId,
         associations.concat(userAssociation),
         meta.token,
       );

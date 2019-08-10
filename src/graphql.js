@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 
 const { createDeleteUrl } = process.env;
 
-export async function createNewNote(associations, token) {
+export async function createNewNote(primaryAssociationId, associations, token) {
   const client = new GraphQLClient(createDeleteUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -24,6 +24,7 @@ export async function createNewNote(associations, token) {
   }`;
 
   const variables = {
+    primaryAssociationId,
     associations,
   };
   return client.request(query, variables).then((note) => {
