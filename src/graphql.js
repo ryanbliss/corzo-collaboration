@@ -9,13 +9,14 @@ export async function createNewNote(associations, token) {
       Authorization: `Bearer ${token}`,
     },
   });
-  const query = `mutation NewNote($associations: [Association!]!) {
-    newNote(associations: $associations) {
+  const query = `mutation NewNote($primaryAssociationId: UUID!, $associations: [Association!]!) {
+    newNote(primaryAssociationId: $primaryAssociationId, associations: $associations) {
       id
       title
       previewText
       createdAt
       editedAt
+      primaryAssociationId
       associations {
         id
       }
