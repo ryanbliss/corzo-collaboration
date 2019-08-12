@@ -19,6 +19,8 @@ export async function createNewNote(primaryAssociationId, associations, token) {
       primaryAssociationId
       associations {
         id
+        name
+        __typename
       }
     }
   }`;

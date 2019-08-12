@@ -209,7 +209,7 @@ Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
     this.to(noteId).emit('deregisterUser', meta.userId);
     this.leave(noteId);
     // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
-    if (getClientCount(noteId) <= 1 && await isDocEmpty(noteId) === true) {
+    if (await isDocEmpty(noteId) === true && getClientCount(noteId) <= 1) {
       await deleteNote(noteId, meta.token);
     }
   },
