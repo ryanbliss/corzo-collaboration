@@ -19,7 +19,7 @@ const schema = {
       ],
     },
     image: {
-      inline: false,
+      inline: true,
       attrs: {
         src: {},
         alt: {
