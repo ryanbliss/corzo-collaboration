@@ -19,7 +19,7 @@ const schema = {
       ],
     },
     image: {
-      inline: true,
+      inline: false,
       attrs: {
         src: {},
         alt: {
@@ -29,7 +29,7 @@ const schema = {
           default: null,
         },
       },
-      group: 'inline',
+      group: 'block',
       draggable: true,
       parseDOM: [
         {
@@ -147,6 +147,30 @@ const schema = {
       parseDOM: [{
         priority: 51,
         tag: '[data-type="todo_list"]',
+      }],
+    },
+    toggle_item: {
+      attrs: {
+        collapsed: {
+          default: false,
+        },
+      },
+      draggable: true,
+      content: '(paragraph|toggle_list)+',
+      parseDOM: [{
+        priority: 51,
+        tag: '[data-type="toggle_item"]',
+        getAttrs: dom => ({
+          done: dom.getAttribute('data-collapsed') === 'true',
+        }),
+      }],
+    },
+    toggle_list: {
+      group: 'block',
+      content: 'todo_item+',
+      parseDOM: [{
+        priority: 51,
+        tag: '[data-type="toggle_list"]',
       }],
     },
     inline_field: {
