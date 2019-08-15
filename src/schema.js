@@ -167,7 +167,7 @@ const schema = {
     },
     toggle_list: {
       group: 'block',
-      content: 'todo_item+',
+      content: 'toggle_item+',
       parseDOM: [{
         priority: 51,
         tag: '[data-type="toggle_list"]',
