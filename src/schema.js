@@ -19,6 +19,7 @@ const schema = {
       ],
     },
     image: {
+      inline: true,
       attrs: {
         src: {},
         alt: {
@@ -28,7 +29,7 @@ const schema = {
           default: null,
         },
       },
-      group: 'block',
+      group: 'inline',
       draggable: true,
       parseDOM: [
         {
