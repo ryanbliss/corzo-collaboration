@@ -10,6 +10,8 @@ import { createNewNote, deleteNote } from './graphql';
 
 const express = require('express');
 
+const { tokenKey } = process.env;
+
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
@@ -33,7 +35,7 @@ io
   .use((socket, next) => {
     console.log('connection attempt');
     if (socket.handshake.query && socket.handshake.query.token) {
-      jwt.verify(socket.handshake.query.token, 'secret', (err, decoded) => {
+      jwt.verify(socket.handshake.query.token, tokenKey, (err, decoded) => {
         if (err) return next(new Error('Authentication error'));
         // eslint-disable-next-line no-param-reassign
         socket.decoded = decoded;
