@@ -3,10 +3,11 @@ import { GraphQLClient } from 'graphql-request';
 
 const { createDeleteUrl } = process.env;
 
-export async function createNewNote(primaryAssociationId, associations, token) {
+export async function createNewNote(primaryAssociationId, associations, token, traceId) {
   const client = new GraphQLClient(createDeleteUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
+      TraceId: traceId,
     },
   });
   const query = `mutation NewNote($primaryAssociationId: UUID!, $associations: [Association!]!) {
@@ -35,11 +36,12 @@ export async function createNewNote(primaryAssociationId, associations, token) {
   });
 }
 
-export async function deleteNote(noteId, token) {
+export async function deleteNote(noteId, token, traceId) {
   console.log('deleting note', noteId);
   const client = new GraphQLClient(createDeleteUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
+      TraceId: traceId,
     },
   });
   const query = `mutation DeleteNote($id: UUID!) {

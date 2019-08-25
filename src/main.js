@@ -52,6 +52,7 @@ io
       orgId: parsedToken.orgId,
       userId: parsedToken.userId,
       token: socket.handshake.query.token,
+      traceId: socket.handshake.headers.traceid,
     };
     socket.on('update', async ({
       version, clientID, steps, editedAssociations,
@@ -169,6 +170,7 @@ io
         primaryAssociationId,
         associations.concat(userAssociation),
         meta.token,
+        meta.traceId,
       );
       meta.noteId = note.id;
       socket.joinThenRegister(meta);
@@ -212,7 +214,7 @@ Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
     this.leave(noteId);
     // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
     if (await isDocEmpty(noteId) === true && getClientCount(noteId) <= 1) {
-      await deleteNote(noteId, meta.token);
+      await deleteNote(noteId, meta.token, meta.traceId);
     }
   },
   writable: true,
