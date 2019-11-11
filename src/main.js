@@ -22,7 +22,7 @@ server.listen(8081);
 console.log('Listening on http://localhost:8081');
 
 // options
-const simulateSlowServerDelay = 250; // milliseconds
+const simulateSlowServerDelay = 0; // milliseconds
 const sleep = ms => (new Promise(resolve => setTimeout(resolve, ms)));
 
 function getClientCount(noteId) {
@@ -143,6 +143,7 @@ io
       }
       if (meta.noteId) {
         // the user is already in a room
+        console.log(`joining room: ${noteId}, leaving room: ${meta.noteId}`);
         await socket.leaveMaybeDelete(meta);
       }
       meta.noteId = noteId;
