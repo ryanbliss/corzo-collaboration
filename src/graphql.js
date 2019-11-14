@@ -36,7 +36,7 @@ export async function createNewNote(primaryAssociationId, associations, token, t
   });
 }
 
-export async function deleteNote(noteId, token, traceId) {
+export function deleteNote(noteId, token, traceId) {
   console.log('deleting note', noteId);
   const client = new GraphQLClient(createDeleteUrl, {
     headers: {
@@ -51,7 +51,12 @@ export async function deleteNote(noteId, token, traceId) {
   const variables = {
     id: noteId,
   };
-  return client.request(query, variables).then(() => {
-    console.log('note deleted');
-  });
+  // delaying it so it will actually delete due to a race condition.
+  // this "marked for deletion" note is invisible to the client due to filtering it out
+  // on the graphql service because the note is empty.
+  setTimeout(() => {
+    client.request(query, variables).then(() => {
+      console.log('note deleted');
+    });
+  }, 5000);
 }

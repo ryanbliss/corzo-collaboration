@@ -215,7 +215,7 @@ Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
     this.leave(noteId);
     // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
     if (await isDocEmpty(noteId) === true && getClientCount(noteId) <= 1) {
-      await deleteNote(noteId, meta.token, meta.traceId);
+      deleteNote(noteId, meta.token, meta.traceId);
     }
   },
   writable: true,
