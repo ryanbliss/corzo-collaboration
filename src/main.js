@@ -7,10 +7,10 @@ import { getDoc, isDocEmpty, storeDoc } from './docsRepo';
 import { getSteps, storeSteps } from './steps';
 import { isLocked, setLocked, setUnlocked } from './noteLock';
 import { createNewNote, deleteNote } from './graphql';
+import { getStringSecret } from './secrets-manager';
 
+const JwtSecret = getStringSecret('jwt_secret');
 const express = require('express');
-
-const { tokenKey } = process.env;
 
 const app = express();
 const server = require('http').createServer(app);
@@ -35,7 +35,7 @@ io
   .use((socket, next) => {
     console.log('connection attempt');
     if (socket.handshake.query && socket.handshake.query.token) {
-      jwt.verify(socket.handshake.query.token, tokenKey, (err, decoded) => {
+      jwt.verify(socket.handshake.query.token, JwtSecret, (err, decoded) => {
         if (err) return next(new Error('Authentication error'));
         // eslint-disable-next-line no-param-reassign
         socket.decoded = decoded;

@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { GraphQLClient } from 'graphql-request';
 
-const { createDeleteUrl } = process.env;
+const createDeleteUrl = 'http://corzo-service:8080/graphql';
 
 export async function createNewNote(primaryAssociationId, associations, token, traceId) {
   const client = new GraphQLClient(createDeleteUrl, {

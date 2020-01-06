@@ -1,7 +1,16 @@
 /* eslint-disable no-console */
-const { Pool } = require('pg');
+import { Pool } from 'pg';
+import { getJsonSecrets } from './secrets-manager';
 
-const pool = new Pool({ ssl: true });
+const dbSecrets = getJsonSecrets('core_db_secrets');
+const pool = new Pool({
+  ssl: true,
+  host: dbSecrets.host,
+  user: dbSecrets.username,
+  password: dbSecrets.password,
+  port: dbSecrets.port,
+  database: dbSecrets.name,
+});
 
 const noteDoesNotExist = Error('Note does not exist');
 
