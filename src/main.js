@@ -9,7 +9,7 @@ import { isLocked, setLocked, setUnlocked } from './noteLock';
 import { createNewNote, deleteNote } from './graphql';
 import { getStringSecret } from './secrets-manager';
 
-const JwtSecret = getStringSecret('jwt_secret');
+const JwtSecret = getStringSecret(process.env.jwtSecretPath);
 const express = require('express');
 
 const app = express();

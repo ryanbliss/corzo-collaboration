@@ -2,7 +2,7 @@
 import { Pool } from 'pg';
 import { getJsonSecrets } from './secrets-manager';
 
-const dbSecrets = getJsonSecrets('core_db_secrets');
+const dbSecrets = getJsonSecrets(process.env.coreDBSecretsPath);
 const pool = new Pool({
   ssl: true,
   host: dbSecrets.host,
