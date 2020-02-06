@@ -40,7 +40,7 @@ function updateNoteContent(noteId, content) {
     .connect()
     .then((client) => {
       client
-        .query('UPDATE notes SET content = $1 WHERE id = $2', [content, noteId])
+        .query('UPDATE notes SET content = $1, synced_with_elasticsearch = false WHERE id = $2', [content, noteId])
         .then((res) => {
           client.release();
           console.log(`note ${noteId} saved, ${res}`);
