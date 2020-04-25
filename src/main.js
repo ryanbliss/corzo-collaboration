@@ -216,6 +216,8 @@ Object.defineProperty(Socket.prototype, 'leaveMaybeDelete', {
     // TODO WHY IS IT THAT THE COUNT IS 1 WHEN I LEAVE
     if (await isDocEmpty(noteId) === true && getClientCount(noteId) <= 1) {
       deleteNote(noteId, meta.token, meta.traceId);
+    } else if (getClientCount(noteId) <= 1) {
+      // TODO: make task on salesforce
     }
   },
   writable: true,

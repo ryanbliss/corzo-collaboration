@@ -27,10 +27,8 @@ function getNoteContent(noteId) {
         throw noteDoesNotExist;
       })
       .catch((e) => {
-        if (e !== noteDoesNotExist) {
-          client.release();
-        }
-        console.log(e.stack);
+        client.release();
+        console.log(e);
         throw e;
       }));
 }
